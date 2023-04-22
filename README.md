@@ -5,7 +5,7 @@ This MIPS assembly program utilizes floating point operations and the bitmap dis
 
 ## General Usage
 1. Load up MARS and the `bitmap.asm` file
-2. Read over controls *(also listed below)*
+2. Read over controls and tips *(listed below)*
 3. Open the **Bitmap Display** and **Keyboard and Display MMIO Simulator** from the *Tools* panel
 4. Configure **Bitmap Display** to desired unit resolution and base address *(more details below)*
 5. Connect *both* tools
@@ -33,6 +33,21 @@ This MIPS assembly program utilizes floating point operations and the bitmap dis
 This an approximate flowchart of the execution of `bitmap.asm`
 
 ![Flowchart PNG](img/MipselbrotFlowchart.png)
+
+## Example Visualizations
+*All of these are on Unit Resolution 128 (512/4) with various pans and zooms to get the image*
+#### Default Mandelbrot Set
+![Default Mandelbrot Set](img/mipselbrotMDefault.png)
+#### Default Julia Set
+![Default Julia Set](img/mipselbrotJDefault.png)
+#### Mandelbrot Set w/ Banding and Color
+![Mandelbrot w/ Banding and Color](img/mipselbrotMBC.png)
+#### Mandelbrot Set w/ Banding and Color, Zoomed In
+![Mandelbrot w/ Banding and Color, Zoomed In](img/mipselbrotMBCZoomedIn.png)
+#### Julia Set w/ Banding, Non-Candidate Value `c = −0.835 − 0.2321i`
+![Julia Set w/ Banding, Non-Candidate Value c = −0.835 − 0.2321i](img/mipselbrotJC1.png)
+#### Julia Set w/ Banding and Color, Non-Candidate Value `c = 0.45 + 0.1428i`
+![Julia Set w/ Banding and Color, Non-Candidate Value c = 0.45 + 0.1428i](img/mipselbrotJC2.png)
 
 ## Tips
 - Notice that rendering each frame may take time and some user input is only intended to be taken after `Waiting for user input` is displayed in **Run I/O**

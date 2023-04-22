@@ -30,6 +30,7 @@ This MIPS assembly program utilizes floating point operations and the bitmap dis
 - Enter Frame Specifications (x-min, x-max, y-min, y-max) `f`
 - Toggle between Mandelbrot and Julia Set with `t`
 - Specify Julia Candidate Value with `c`
+- Exit program with `e`
 
 ## Program Flowchart
 This an approximate flowchart of the execution of `bitmap.asm`

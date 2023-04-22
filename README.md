@@ -1,6 +1,6 @@
 # mipselbrot
 ### ***A MIPS Mandelbrot and Julia Set Visualization Program***
-
+This MIPS assembly program utilizes floating point operations and the bitmap display in order to visualize either the [Mandelbrot](https://en.wikipedia.org/wiki/Mandelbrot_set) or [Julia Set(s)](https://en.wikipedia.org/wiki/Julia_set) with controls for interactivity. Different color and visualization modes are avaliable in addition to baseline graph viewing capabilities.
 
 
 ## General Usage
@@ -24,6 +24,7 @@
 - Pan View with `w`, `a`, `s`, `d` 
 - Zoom View ith `+` and `-`
 - Toggle between BW and Color modes with `m`
+- Toggle between Bounded and Banding modes with `b`
 - Enter Frame Specifications (x-min, x-max, y-min, y-max) `f`
 - Toggle between Mandelbrot and Julia Set with `t`
 - Specify Julia Candidate Value with `c`

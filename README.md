@@ -29,4 +29,13 @@ This MIPS assembly program utilizes floating point operations and the bitmap dis
 - Toggle between Mandelbrot and Julia Set with `t`
 - Specify Julia Candidate Value with `c`
 
+## Program Flowchart
+This an approximate flowchart of the execution of `bitmap.asm`
+
+![Flowchart PNG](img/MipselbrotFlowchart.png)
+
+## Tips
+- Notice that rendering each frame may take time and some user input is only intended to be taken after `Waiting for user input` is displayed in **Run I/O**
+- *Sometimes* the program will bug out and only draw about a quarter of the frame, if this happens, change the base address used in both `bitmap.asm` and in your **Bitmap Display** tool to one of the other options and re-run. If this issue persists, restart MARS or contact me
+- Excessively zooming in will cause unexpected behavior, this is due to the limitations of floating point precision numbers in MIPS, and so this should be avoided. This behavior can be noticed if the entire screen becomes one color unexpectedly and can be solved by pressing `r`.
 

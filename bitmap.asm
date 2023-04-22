@@ -1,6 +1,6 @@
 #	Bitmap Project by Reid Smith
 #
-#	MIPSelbrot: A MIPS Assembly Language Mandelbrot Set Explorer
+#	MIPSelbrot: A MIPS Assembly Language Mandelbrot and Julia Set Explorer
 #
 #	Features:
 #	-Visualizes Mandelbrot and Julia Set(s) in MIPS Bitmap
@@ -17,11 +17,18 @@
 #	-Toggle between Mandelbrot and Julia Set with `t`
 #	-Specify Julia Candidate Value with `c`
 #	-Toggle between BW and Color modes with `m`
+#	-Toggle between bounded and banding modes with `b`
+#	-Exit with `e`
 
-.eqv PIXEL_SIDE, 128
-.eqv BASE_BITMAP_ADDRESS, 0x10040000
 
-.data
+
+#!!!!!
+.eqv PIXEL_SIDE, 128	#SET TO DESIRED UNIT RESOLTION BEFORE RUNNING
+.eqv BASE_BITMAP_ADDRESS, 0x10040000	#SET TO DESIRED BASE ADDRESS BEFORE RUNNING
+#!!!!!
+
+
+.data	#Data section for data and message strings
 
 addition_res:	.space 8
 square_res:	.space 8
@@ -50,7 +57,7 @@ color_list:	.word 0x006e92fa, 0x00788aef, 0x008082e3, 0x00867bd7, 0x008a74cb, 0x
 
 
 .text
-main:
+main:	#Main function
 	la	$a0, input_msg #Output waiting for input message
 	li	$v0, 4
 	syscall
@@ -66,7 +73,7 @@ main:
 	la	$a0, input_msg	#Output waiting for input message
 	li	$v0, 4
 	syscall
-	j	main_loop
+	j	main_loop	#Loop
 exit:
 	li 	$v0, 10
 	syscall
@@ -79,7 +86,7 @@ exit:
 
 #Name: Draw Pixel
 #Paramters: $a0 = bounded, $a1 = pixel_x, $a2 = pixel_y, $a3 = num_iterations
-#Modifies: t2, (t2), 
+#Modifies: t0/2, (t2), a3
 #Returns: None
 draw_pixel:
     	# t2 = address = MEM + 4*(x + y*width)
@@ -93,7 +100,7 @@ draw_pixel:
 	bne 	$0, $s2, make_banded	#Break if graph is banded
 	beq 	$0, $a0, pixel_not_bounded
 	
-	bne	$0, $s3, pixel_bounded_color
+	bne	$0, $s3, pixel_bounded_color	#Break if graph is colored and bounded
 	li	$t0, 0x00FFFFFF
 	j	store_pixel
 
@@ -102,7 +109,7 @@ draw_pixel:
 	j 	store_pixel
 	
 	pixel_not_bounded:
-	bne	$0, $s3, pixel_not_bounded_color
+	bne	$0, $s3, pixel_not_bounded_color	#Break if graph is colored and banded
 	li 	$t0, 0
 	j 	store_pixel
 	
@@ -111,7 +118,7 @@ draw_pixel:
 	j	store_pixel
 	
 	make_banded:
-	bne	$0, $s3, make_banded_color
+	bne	$0, $s3, make_banded_color	#Calculate grayscale value
 	mul	$a3, $a3, 12
 	add	$t0, $0, $a3
 	sll	$t0, $t0, 8
@@ -121,7 +128,7 @@ draw_pixel:
 	j	store_pixel
 
 	make_banded_color:
-	sll	$a3, $a3, 2
+	sll	$a3, $a3, 2	#Calculate color by index
 	la	$t0, color_list
 	add	$t0, $t0, $a3
 	lw	$t0, ($t0)
@@ -140,7 +147,7 @@ draw_pixel:
 #Returns: $v0 = 1 if bounded, 0 else, $v1 = # of iterations sucessfully bounded
 is_bounded:
 	li 	$t3, 0	#t3 = Cycle Index
-	li 	$t4, 15	#t4 = Maximum Cycles
+	li 	$t4, 20	#t4 = Maximum Cycles
 	li 	$t5, 4		
 	mtc1 	$t5, $f12
 	cvt.s.w $f12, $f12	#f12 = 4.0
@@ -252,9 +259,9 @@ draw_set:
 	jr 	$ra
 
 #Name: (Get) User Modifications
-#Parameters: 
-#Modifies: 
-#Returns: 
+#Parameters: User input
+#Modifies:  t4, a0/1, v0, f0-2, s1-3, A lot of stuff honestly
+#Returns: None
 user_modifications:
 	lw	$t4, 0xFFFF0004
 	la	$a0, got_input_msg	#Output input message
@@ -265,6 +272,10 @@ user_modifications:
 	syscall
 	li	$a0, 10
 	syscall
+	
+	exit_button:
+	bne	$t4, 101, zoom_in	# `e` Exit program
+	j	exit
 	
 	zoom_in:
 	bne	$t4, 43, zoom_out	# '+' Zoom in graph
@@ -493,7 +504,7 @@ user_modifications:
 #Modifies: Bitmap, t0-2
 #Returns: None
 clear_screen:
-	li 	$t0, BASE_BITMAP_ADDRESS
+	li 	$t0, BASE_BITMAP_ADDRESS	#Loads looping parameters
 	li 	$t1, PIXEL_SIDE
 	li	$t2, 0x000000FF
 	mul 	$t1, $t1, $t1
@@ -501,7 +512,7 @@ clear_screen:
 	add	$t1, $t1, $t0
 
 	clear_loop:
-	beq	$t0, $t1, after_clear_loop
+	beq	$t0, $t1, after_clear_loop	#Stores blue until last pixel
 	sw	$t2, ($t0)
 	addiu	$t0, $t0, 4
 	j	clear_loop

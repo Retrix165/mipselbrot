@@ -7,18 +7,19 @@
 #	-Controllable User Perspective
 #
 #	Bitmap Settings:
-#	-Unit Width/Height = 1
-#	-Display Width/Height = 256
-#	-Base Address = 0x10008000 ($gp)
+#	-PIXEL_SIDE = Diplay / Unit <= 128 (Basically just have a unit resolution of up to 128x128)
+#	-BASE_BITMAP_ADDRESS = Base address = global data, $gp, static data, heap (Doesn't matter, just try another if one doesn't work at first)
 #
 #	Controls:
 #	-Pan View with `w`, `a`, `s`, `d` 
-#	-Enter Specifications (x-min, x-max, y-min, y-max) with `s`
+#	-Zoom View ith `+` and `-`
+#	-Enter Frame Specifications (x-min, x-max, y-min, y-max) `f`
 #	-Toggle between Mandelbrot and Julia Set with `t`
-#	-Toggle between BW and Color modes with `c`
+#	-Specify Julia Candidate Value with `c`
+#	-Toggle between BW and Color modes with `m`
 
-.eqv PIXEL_SIDE, 32
-.eqv BASE_BITMAP_ADDRESS, 0x10008000
+.eqv PIXEL_SIDE, 128
+.eqv BASE_BITMAP_ADDRESS, 0x10040000
 
 .data
 
@@ -26,14 +27,25 @@ addition_res:	.space 8
 square_res:	.space 8
 magnitude_res:	.space 4
 real_min:	.float -2
-real_max:	.float 0.5
+real_max:	.float 1
 complex_min:	.float -1.5
 complex_max:	.float 1.5
-nontest_value:	.space 8
+saved_real_min:	.float -2
+saved_real_max:	.float 1
+saved_complex_min:	.float -1.5
+saved_complex_max:	.float 1.5
+noncandidate_value:	.space 8
 zoom_multiplier:.float 1.333333
 pan_offset:	.float 0.333333
 input_msg:	.asciiz "Waiting for input now"
-got_input_msg:	.ascii "Recieved input key "
+got_input_msg:	.asciiz "Recieved input key "
+noncandidate_real_msg:	.asciiz "Please enter the real part of the non-candidate value (or nothing to stay the same)"
+noncandidate_complex_msg:	.asciiz "Please enter the complex part of the non-candidate value (or nothing to stay the same)"
+real_min_msg:	.asciiz "Please enter the real minimum value of the frame view (or nothing to stay the same)"
+real_max_msg:	.asciiz "Please enter the real maximum value of the frame view (or nothing to stay the same)"
+complex_min_msg:	.asciiz "Please enter the complex minimum value of the frame view (or nothing to stay the same)"
+complex_max_msg:	.asciiz "Please enter the complex maximum value of the frame view (or nothing to stay the same)"
+input_error_msg:	.asciiz "Error during user input, no change made to values"
 color_list:	.word 0x006e92fa, 0x00788aef, 0x008082e3, 0x00867bd7, 0x008a74cb, 0x008d6dbf, 0x008e66b3, 0x008e5fa8, 0x008d599c, 0x008c5391, 0x00894e86, 0x0086497b, 0x00824471, 0x007d3f67, 0x00783b5e, 0x00723755, 0x006c344c, 0x00663044, 0x005f2d3d, 0x00582a36
 
 
@@ -49,14 +61,10 @@ main:
 	lw 	$t4, 0xFFFF0000		#Check if user input
 	beq	$zero, $t4, main_loop
 	jal	user_modifications
-	draw_graph:
 	jal	clear_screen
 	jal	draw_set
 	la	$a0, input_msg	#Output waiting for input message
 	li	$v0, 4
-	syscall
-	li	$v0, 11
-	li	$a0, 10
 	syscall
 	j	main_loop
 exit:
@@ -179,7 +187,7 @@ draw_set:
 	li 	$t0, 0	#t0 = pixel_x
 	li	$t1, 0	#t1 = pixel_y	
 	
-	la	$t2, nontest_value
+	la	$t2, noncandidate_value
 	l.s	$f29, 0($t2)	#f29 = z_real for Mandelbrot / c_real for Julia
 	l.s	$f30, 4($t2)	#f30 = z_complex for Mandelbrot / c_complex for Julia
 	
@@ -211,6 +219,7 @@ draw_set:
 	mov.s	$f8, $f0	#f8 = Testing C-Value Real = r
 	mov.s	$f9, $f3	#f9 = Testing C-Value Complex = i
 	j 	check_bounds
+	
 	julia_values:	
 	mov.s	$f6, $f0	#f6 = r
 	mov.s	$f7, $f3	#f7 = i
@@ -352,9 +361,20 @@ user_modifications:
 	j	end_modifications
 
 	color_reg:
-	bne	$t4, 114, color_bands	# 'r' Draw graph in regular mode (bw and no bands)
+	bne	$t4, 114, color_bands	# 'r' Draw set with default settings (Mandelbrot, bw, no bands, default frame, noncandidate = 0)
 	li	$s2, 0
 	li	$s3, 0
+	lw	$t4, saved_real_min
+	sw	$t4, real_min
+	lw	$t4, saved_real_max
+	sw	$t4, real_max
+	lw	$t4, saved_complex_min
+	sw	$t4, complex_min
+	lw	$t4, saved_complex_max
+	sw	$t4, complex_max
+	la	$t4, noncandidate_value
+	sw	$0, 0($t4)
+	sw	$0, 4($t4)
 	j	end_modifications
 	
 	color_bands:
@@ -363,12 +383,106 @@ user_modifications:
 	j	end_modifications
 	
 	color_bw:
-	bne	$t4, 99, set_graph	# 'c' Toggle drawing graph with color
+	bne	$t4, 109, set_type	# 'm' Toggle drawing graph with color
 	xori	$s3, $s3, 1
 	j	end_modifications
 	
+	set_type:			# `t` Toggle between corresponding Mandelbrot and Julia Sets
+	bne	$t4, 116, set_noncandidate
+	xori	$s1, $s1, 1
+	j	end_modifications
+	
+	set_noncandidate:
+	bne	$t4, 99, set_graph	# `c` Set the Julia Set's Non-Candidate Value
+	la	$t4, noncandidate_value
+	li	$v0, 52
+	la	$a0, noncandidate_real_msg
+	syscall
+	bne	$a1, -1, valid_nc_real
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_nc_real:
+	bne 	$0, $a1, nc_complex
+	swc1	$f0, 0($t4)
+	nc_complex:
+	li	$v0, 52
+	la	$a0, noncandidate_complex_msg
+	syscall
+	bne	$a1, -1, valid_nc_complex
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_nc_complex:
+	bne 	$0, $a1, end_modifications
+	swc1	$f0, 4($t4)
+	j	end_modifications
+	
 	set_graph:
-	bne	$t4, 115, end_modifications	# 's' Set graph parameters (Mandelbrot or Julia, frame bounds)
+	bne	$t4, 102, end_modifications	# 'f' Set graph parameters (Mandelbrot or Julia, frame bounds)
+	la	$t4, real_min
+	li	$v0, 52
+	la	$a0, real_min_msg
+	syscall
+	bne	$a1, -1, valid_real_min
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_real_min:
+	bne 	$0, $a1, set_real_max
+	swc1	$f0, 0($t4)
+	
+	set_real_max:
+	la	$t4, real_max
+	li	$v0, 52
+	la	$a0, real_max_msg
+	syscall
+	bne	$a1, -1, valid_real_max
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_real_max:
+	bne 	$0, $a1, set_complex_min
+	swc1	$f0, 0($t4)
+	
+	set_complex_min:
+	la	$t4, complex_min
+	li	$v0, 52
+	la	$a0, complex_min_msg
+	syscall
+	bne	$a1, -1, valid_complex_min
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_complex_min:
+	bne 	$0, $a1, set_complex_max
+	swc1	$f0, 0($t4)
+	
+	set_complex_max:
+	la	$t4, complex_max
+	li	$v0, 52
+	la	$a0, complex_max_msg
+	syscall
+	bne	$a1, -1, valid_complex_max
+	li	$v0, 55
+	la	$a0, input_error_msg
+	li	$a1, 0
+	syscall
+	j 	main
+	valid_complex_max:
+	bne 	$0, $a1, end_modifications
+	swc1	$f0, 0($t4)
+	
 	
 	end_modifications:
 	jr $ra
@@ -376,7 +490,7 @@ user_modifications:
 
 #Name: Clear Screen
 #Parameters: None
-#Modifies: Bitmap
+#Modifies: Bitmap, t0-2
 #Returns: None
 clear_screen:
 	li 	$t0, BASE_BITMAP_ADDRESS
@@ -391,5 +505,6 @@ clear_screen:
 	sw	$t2, ($t0)
 	addiu	$t0, $t0, 4
 	j	clear_loop
+	
 	after_clear_loop:
 	jr	$ra

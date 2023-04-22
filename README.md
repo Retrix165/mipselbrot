@@ -12,12 +12,14 @@ This MIPS assembly program utilizes floating point operations and the bitmap dis
 6. Assemble file, run, and input `r` to begin visualizing the sets!
 
 ## Bitmap Display Configuration
+- `PIXEL_SIDE` = Unit Resolution (make sure you set it to your desired resolution)
 - The **Unit Resolution** (Display Value/Unit Value) should be no more than 128 by 128 meaning that the following should be considered max **Unit Resolutions**
 
   - Display Values of *1024* and Unit Values of *8* 
   - Display Values of *512* and Unit Values of *4* 
   - Display Values of *256* and Unit Values of *2* **(RECOMENDED SETTING)**
   - Display Values of *128* and Unit Values of *1* 
+- The `Base address` field within **Bitmap Display** can be any of `global data`, `$gp`, `static data`, or `heap`, **just make sure to set `BASE_BITMAP_ADDRESS` to same value**
 
 *Note: Your choice of unit resolution should be dependent on how you weigh the importance of a detailed visualization versus responsiveness of controls (greater resolution = greater render time)*
 ## Controls *(while running)*

@@ -1,5 +1,5 @@
 # mipselbrot
-### ***A MIPS Mandelbrot and Julia Set Visualization Program***
+### ***A MIPS Mandelbrot and Julia Set Visualization Program by Reid Smith***
 This MIPS assembly program utilizes floating point operations and the bitmap display in order to visualize either the [Mandelbrot](https://en.wikipedia.org/wiki/Mandelbrot_set) or [Julia Set(s)](https://en.wikipedia.org/wiki/Julia_set) with controls for interactivity. Different color and visualization modes are avaliable in addition to baseline graph viewing capabilities.
 
 
